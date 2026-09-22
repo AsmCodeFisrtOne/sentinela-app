@@ -40,7 +40,13 @@
     font-size: 15px;
     font-weight: 600;
     color: var(--text-primary);
-    margin: 4px 0 18px;
+    margin: 4px 0 2px;
+  }
+  .app-version {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0 0 18px;
   }
   .status-card {
     border-radius: 18px;
@@ -138,6 +144,7 @@
 
 <div class="wrap">
   <p class="app-title">Sentinela</p>
+  <p class="app-version">v1.5</p>
 
   <div id="statusCard" class="status-card">
     <div class="status-icon-wrap"><i id="statusIcon" class="ti ti-shield-check"></i></div>
@@ -155,10 +162,10 @@
   </div>
 
   <div id="msgRow" class="row">
-    <i class="ti ti-brand-whatsapp" style="color: var(--success);"></i>
+    <i class="ti ti-message" style="color: var(--success);"></i>
     <div style="flex:1;">
       <p id="msgTitle" class="row-title">Mensagem pronta</p>
-      <p class="row-sub">Toque para enviar pelo WhatsApp</p>
+      <p class="row-sub">Toque para enviar por SMS</p>
     </div>
   </div>
 
@@ -167,7 +174,7 @@
 
   <div class="panel">
     <p class="label">Configuração</p>
-    <input id="contactInput" type="tel" placeholder="Número do WhatsApp (ex: 5511999999999)">
+    <input id="contactInput" type="tel" placeholder="Número para SMS (ex: 5511999999999)">
     <input id="uuidInput" type="text" placeholder="UUID do beacon (deixe em branco para parear com o primeiro que aparecer)">
     <button id="saveConfigBtn">Salvar configuração</button>
     <div id="eventLog" class="log"></div>
@@ -312,28 +319,28 @@ function stopSiren() {
 }
 
 // ---------------------------------------------------------------------
-// WHATSAPP
-// Limitação real: um navegador não consegue enviar mensagem sozinho,
-// sem interação do usuário. O que este código faz é abrir o link do
-// WhatsApp (wa.me) já com a mensagem pronta assim que o alarme dispara;
-// se o navegador bloquear o pop-up automático, o botão na tela também
-// abre o mesmo link com um toque.
+// SMS
+// Limitação real: um navegador não consegue enviar SMS sozinho, sem
+// interação do usuário - é bloqueio de segurança do próprio sistema,
+// não algo contornável no código. O que dá pra fazer é abrir o app de
+// mensagens padrão do celular já com o número e o texto preenchidos,
+// faltando só o usuário tocar em enviar.
 // ---------------------------------------------------------------------
-function linkWhatsapp() {
+function linkSms() {
   const texto = encodeURIComponent("Alerta do Sentinela: o sinal do beacon foi perdido agora, " + new Date().toLocaleTimeString("pt-BR") + ".");
   const numero = contactNumber.replace(/\D/g, "");
-  return "https://wa.me/" + numero + "?text=" + texto;
+  return "sms:" + numero + "?body=" + texto;
 }
 
 function enviarWhatsapp() {
   if (!contactNumber) {
-    msgTitle.textContent = "Configure um número de WhatsApp";
+    msgTitle.textContent = "Configure um número de contato";
     return;
   }
-  const url = linkWhatsapp();
-  const aberto = window.open(url, "_blank");
-  msgTitle.textContent = aberto ? "WhatsApp aberto com a mensagem" : "Toque aqui para enviar pelo WhatsApp";
-  logEvento("whatsapp", "Mensagem de alarme preparada para " + contactNumber);
+  const url = linkSms();
+  const aberto = window.open(url, "_self");
+  msgTitle.textContent = aberto ? "App de mensagens aberto" : "Toque aqui para enviar SMS";
+  logEvento("sms", "Mensagem de alarme preparada para " + contactNumber);
 }
 
 msgRow.addEventListener("click", enviarWhatsapp);
