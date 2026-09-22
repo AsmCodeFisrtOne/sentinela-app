@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>Sentinela</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface-1: #1e293b;
+    --surface-2: #16213a;
+    --border: #2b3a55;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --success: #22c55e;
+    --success-bg: #123321;
+    --danger: #ef4444;
+    --danger-bg: #3a1414;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .wrap {
+    max-width: 380px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+  .app-title {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 4px 0 18px;
+  }
+  .status-card {
+    border-radius: 18px;
+    padding: 26px 18px;
+    text-align: center;
+    margin-bottom: 16px;
+    background: var(--success-bg);
+    transition: background 0.3s ease;
+  }
+  .status-card.alarm { background: var(--danger-bg); }
+  .status-icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .status-icon-wrap i { font-size: 36px; color: var(--success); }
+  .status-card.alarm .status-icon-wrap i { color: var(--danger); }
+  .status-title { font-size: 18px; font-weight: 600; margin: 0 0 4px; color: var(--success); }
+  .status-card.alarm .status-title { color: var(--danger); }
+  .status-sub { font-size: 13px; margin: 0; color: var(--success); opacity: 0.85; }
+  .status-card.alarm .status-sub { color: var(--danger); }
+
+  .row {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-1);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .row.show { display: flex; }
+  .row i { font-size: 20px; color: var(--danger); }
+  .row .row-title { font-size: 14px; font-weight: 500; margin: 0; }
+  .row .row-sub { font-size: 12px; color: var(--text-secondary); margin: 0; }
+
+  .bars { display: flex; gap: 3px; align-items: flex-end; height: 18px; }
+  .bars div { width: 3px; background: var(--danger); border-radius: 2px; animation: pulse 0.9s ease-in-out infinite; }
+  .bars div:nth-child(1) { height: 8px; }
+  .bars div:nth-child(2) { height: 16px; animation-delay: 0.15s; }
+  .bars div:nth-child(3) { height: 11px; animation-delay: 0.3s; }
+  @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+  button {
+    width: 100%;
+    height: 46px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    border: 0.5px solid var(--border);
+    background: transparent;
+    color: var(--text-primary);
+    margin-top: 4px;
+  }
+  button.primary { background: var(--success); border: none; color: #06220f; }
+  button.danger { background: var(--danger); border: none; color: #2a0a0a; }
+  button:disabled { opacity: 0.5; }
+
+  .panel {
+    margin-top: 18px;
+    padding: 14px;
+    background: var(--surface-1);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+  }
+  .panel p.label { font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .panel input {
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    border: 0.5px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-primary);
+    padding: 0 10px;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .log {
+    margin-top: 10px;
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .log div { padding: 2px 0; border-bottom: 0.5px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <p class="app-title">Sentinela</p>
+
+  <div id="statusCard" class="status-card">
+    <div class="status-icon-wrap"><i id="statusIcon" class="ti ti-shield-check"></i></div>
+    <p id="statusTitle" class="status-title">Não conectado</p>
+    <p id="statusSub" class="status-sub">Toque em "Conectar ao beacon" para começar</p>
+  </div>
+
+  <div id="soundRow" class="row">
+    <i class="ti ti-volume-3"></i>
+    <div style="flex:1;">
+      <p class="row-title">Alarme sonoro ativo</p>
+      <p class="row-sub">Sirene tocando no aparelho</p>
+    </div>
+    <div class="bars"><div></div><div></div><div></div></div>
+  </div>
+
+  <div id="msgRow" class="row">
+    <i class="ti ti-brand-whatsapp" style="color: var(--success);"></i>
+    <div style="flex:1;">
+      <p id="msgTitle" class="row-title">Mensagem pronta</p>
+      <p class="row-sub">Toque para enviar pelo WhatsApp</p>
+    </div>
+  </div>
+
+  <button id="connectBtn" class="primary"><i class="ti ti-bluetooth"></i>&nbsp; Conectar ao beacon</button>
+  <button id="stopAlarmBtn" class="danger" style="display:none;">Parar alarme</button>
+
+  <div class="panel">
+    <p class="label">Configuração</p>
+    <input id="contactInput" type="tel" placeholder="Número do WhatsApp (ex: 5511999999999)">
+    <input id="uuidInput" type="text" placeholder="UUID do beacon (deixe em branco para parear com o primeiro que aparecer)">
+    <button id="saveConfigBtn">Salvar configuração</button>
+    <div id="eventLog" class="log"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+// ---------------------------------------------------------------------
+// CONFIGURAÇÃO DO FIREBASE
+// Troque pelos dados do seu projeto (o mesmo padrão usado no Pitoco APP
+// e no Van Escolar). Pegue em: Firebase Console > Configurações do
+// projeto > Seus apps > SDK setup and configuration.
+// ---------------------------------------------------------------------
+const firebaseConfig = {
+  apiKey: "AIzaSyCxuxJeHGCfQeQbwPJShhIO2Fv3WdWaH8E",
+  authDomain: "sentinela-app-361b1.firebaseapp.com",
+  projectId: "sentinela-app-361b1",
+  storageBucket: "sentinela-app-361b1.firebasestorage.app",
+  messagingSenderId: "637816416930",
+  appId: "1:637816416930:web:157995966b92f6b65585fb"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const configDocRef = db.collection("sentinela_config").doc("principal");
+const eventosRef = db.collection("sentinela_eventos");
+
+// ---------------------------------------------------------------------
+// ESTADO
+// ---------------------------------------------------------------------
+const TIMEOUT_MS = 6000;        // se não ouvir o beacon por 6s, considera fora de alcance
+const CHECK_INTERVAL_MS = 1000;
+
+let pairedUUID = null;          // UUID do beacon pareado (lido do Firestore ou digitado)
+let lastSeenAt = 0;
+let alarmOn = false;
+let scanning = false;
+let checkTimer = null;
+let contactNumber = "";
+
+let audioCtx = null, oscA = null, gainNode = null, sirenTimer = null;
+
+// ---------------------------------------------------------------------
+// ELEMENTOS
+// ---------------------------------------------------------------------
+const statusCard = document.getElementById("statusCard");
+const statusIcon = document.getElementById("statusIcon");
+const statusTitle = document.getElementById("statusTitle");
+const statusSub = document.getElementById("statusSub");
+const soundRow = document.getElementById("soundRow");
+const msgRow = document.getElementById("msgRow");
+const msgTitle = document.getElementById("msgTitle");
+const connectBtn = document.getElementById("connectBtn");
+const stopAlarmBtn = document.getElementById("stopAlarmBtn");
+const contactInput = document.getElementById("contactInput");
+const uuidInput = document.getElementById("uuidInput");
+const saveConfigBtn = document.getElementById("saveConfigBtn");
+const eventLog = document.getElementById("eventLog");
+
+// ---------------------------------------------------------------------
+// LOG (Firestore + tela)
+// ---------------------------------------------------------------------
+function logEvento(tipo, detalhe) {
+  const linha = document.createElement("div");
+  const hora = new Date().toLocaleTimeString("pt-BR");
+  linha.textContent = hora + " — " + detalhe;
+  eventLog.prepend(linha);
+
+  eventosRef.add({
+    tipo: tipo,
+    detalhe: detalhe,
+    criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function (err) {
+    console.error("Falha ao gravar evento no Firestore:", err);
+  });
+}
+
+// ---------------------------------------------------------------------
+// CONFIGURAÇÃO (carrega/salva no Firestore)
+// ---------------------------------------------------------------------
+function carregarConfig() {
+  configDocRef.get().then(function (doc) {
+    if (doc.exists) {
+      const data = doc.data();
+      contactNumber = data.whatsapp || "";
+      pairedUUID = data.uuid || null;
+      contactInput.value = contactNumber;
+      uuidInput.value = pairedUUID || "";
+    }
+  }).catch(function (err) {
+    console.error("Falha ao carregar configuração:", err);
+  });
+}
+
+saveConfigBtn.addEventListener("click", function () {
+  contactNumber = contactInput.value.trim();
+  const digitado = uuidInput.value.trim();
+  configDocRef.set({
+    whatsapp: contactNumber,
+    uuid: digitado || pairedUUID || null
+  }, { merge: true }).then(function () {
+    logEvento("config", "Configuração salva");
+  }).catch(function (err) {
+    console.error("Falha ao salvar configuração:", err);
+  });
+});
+
+// ---------------------------------------------------------------------
+// ÁUDIO DA SIRENE
+// ---------------------------------------------------------------------
+function startSiren() {
+  if (audioCtx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new AC();
+  oscA = audioCtx.createOscillator();
+  gainNode = audioCtx.createGain();
+  oscA.type = "sawtooth";
+  oscA.frequency.value = 750;
+  gainNode.gain.value = 0.35;
+  oscA.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  oscA.start();
+  let up = true;
+  sirenTimer = setInterval(function () {
+    if (!oscA) return;
+    up = !up;
+    oscA.frequency.setTargetAtTime(up ? 1000 : 500, audioCtx.currentTime, 0.03);
+  }, 350);
+}
+
+function stopSiren() {
+  if (sirenTimer) { clearInterval(sirenTimer); sirenTimer = null; }
+  const ctx = audioCtx, g = gainNode, o = oscA;
+  audioCtx = null; gainNode = null; oscA = null;
+  if (g) { try { g.gain.cancelScheduledValues(0); } catch (e) {} try { g.gain.value = 0; } catch (e) {} }
+  if (o) { try { o.stop(); } catch (e) {} try { o.disconnect(); } catch (e) {} }
+  if (g) { try { g.disconnect(); } catch (e) {} }
+  if (ctx) { try { ctx.close(); } catch (e) {} }
+}
+
+// ---------------------------------------------------------------------
+// WHATSAPP
+// Limitação real: um navegador não consegue enviar mensagem sozinho,
+// sem interação do usuário. O que este código faz é abrir o link do
+// WhatsApp (wa.me) já com a mensagem pronta assim que o alarme dispara;
+// se o navegador bloquear o pop-up automático, o botão na tela também
+// abre o mesmo link com um toque.
+// ---------------------------------------------------------------------
+function linkWhatsapp() {
+  const texto = encodeURIComponent("Alerta do Sentinela: o sinal do beacon foi perdido agora, " + new Date().toLocaleTimeString("pt-BR") + ".");
+  const numero = contactNumber.replace(/\D/g, "");
+  return "https://wa.me/" + numero + "?text=" + texto;
+}
+
+function enviarWhatsapp() {
+  if (!contactNumber) {
+    msgTitle.textContent = "Configure um número de WhatsApp";
+    return;
+  }
+  const url = linkWhatsapp();
+  const aberto = window.open(url, "_blank");
+  msgTitle.textContent = aberto ? "WhatsApp aberto com a mensagem" : "Toque aqui para enviar pelo WhatsApp";
+  logEvento("whatsapp", "Mensagem de alarme preparada para " + contactNumber);
+}
+
+msgRow.addEventListener("click", enviarWhatsapp);
+
+// ---------------------------------------------------------------------
+// ALARME
+// ---------------------------------------------------------------------
+function dispararAlarme() {
+  if (alarmOn) return;
+  alarmOn = true;
+  statusCard.classList.add("alarm");
+  statusIcon.className = "ti ti-alert-triangle";
+  statusTitle.textContent = "Fora de alcance";
+  statusSub.textContent = "Sinal do beacon perdido";
+  soundRow.classList.add("show");
+  msgRow.classList.add("show");
+  stopAlarmBtn.style.display = "block";
+  startSiren();
+  enviarWhatsapp();
+  logEvento("alarme", "Alarme disparado - beacon fora de alcance");
+}
+
+function pararAlarme() {
+  alarmOn = false;
+  stopSiren();
+  statusCard.classList.remove("alarm");
+  statusIcon.className = "ti ti-shield-check";
+  statusTitle.textContent = "Dentro do alcance";
+  statusSub.textContent = "Conectado normalmente";
+  soundRow.classList.remove("show");
+  msgRow.classList.remove("show");
+  stopAlarmBtn.style.display = "none";
+  logEvento("alarme", "Alarme parado manualmente");
+}
+
+stopAlarmBtn.addEventListener("click", pararAlarme);
+
+// ---------------------------------------------------------------------
+// ESCANEAMENTO BLE (Web Bluetooth)
+// Requer Chrome no Android com a flag "Experimental Web Platform
+// features" ativada em chrome://flags, porque requestLEScan ainda é
+// experimental. Sem essa flag, o navegador não expõe essa função.
+// ---------------------------------------------------------------------
+function extrairUUIDDoAnuncio(evento) {
+  // Beacons no formato iBeacon vêm dentro de manufacturerData da Apple (0x004C)
+  const dados = evento.manufacturerData.get(0x004C);
+  if (!dados || dados.byteLength < 22) return null;
+  const bytes = new Uint8Array(dados.buffer, dados.byteOffset, dados.byteLength);
+  // bytes[0..1] = tipo/tamanho do iBeacon, bytes[2..17] = UUID (16 bytes)
+  const uuidBytes = bytes.slice(2, 18);
+  const hex = Array.from(uuidBytes).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+  return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) + "-" + hex.slice(16, 20) + "-" + hex.slice(20);
+}
+
+function onAdvertisement(evento) {
+  const uuid = extrairUUIDDoAnuncio(evento);
+  if (!uuid) return;
+
+  if (!pairedUUID) {
+    // Primeiro beacon visto vira o pareado, e é salvo no Firestore
+    pairedUUID = uuid;
+    configDocRef.set({ uuid: pairedUUID }, { merge: true });
+    logEvento("pareamento", "Pareado com o beacon " + pairedUUID);
+  }
+
+  if (uuid !== pairedUUID) return;
+
+  lastSeenAt = Date.now();
+  if (alarmOn) pararAlarme();
+
+  statusTitle.textContent = "Dentro do alcance";
+  statusSub.textContent = "Sinal visto agora · RSSI " + evento.rssi + " dBm";
+}
+
+function iniciarChecagemDeAusencia() {
+  if (checkTimer) clearInterval(checkTimer);
+  checkTimer = setInterval(function () {
+    if (!scanning) return;
+    if (lastSeenAt === 0) return;
+    if (Date.now() - lastSeenAt > TIMEOUT_MS) {
+      dispararAlarme();
+    }
+  }, CHECK_INTERVAL_MS);
+}
+
+async function conectar() {
+  if (!navigator.bluetooth || !navigator.bluetooth.requestLEScan) {
+    statusSub.textContent = "Este navegador não suporta escaneamento BLE (use Chrome Android com a flag experimental ativada)";
+    return;
+  }
+  try {
+    connectBtn.disabled = true;
+    const scan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true });
+    navigator.bluetooth.addEventListener("advertisementreceived", onAdvertisement);
+    scanning = true;
+    statusTitle.textContent = "Procurando o beacon...";
+    statusSub.textContent = pairedUUID ? "Aguardando " + pairedUUID : "Aguardando o primeiro beacon";
+    connectBtn.textContent = "Escaneando...";
+    lastSeenAt = 0;
+    iniciarChecagemDeAusencia();
+    logEvento("conexao", "Escaneamento BLE iniciado");
+  } catch (err) {
+    connectBtn.disabled = false;
+    statusSub.textContent = "Não foi possível iniciar o Bluetooth: " + err.message;
+    console.error(err);
+  }
+}
+
+connectBtn.addEventListener("click", conectar);
+
+// ---------------------------------------------------------------------
+// INICIALIZAÇÃO
+// ---------------------------------------------------------------------
+carregarConfig();
+</script>
+</body>
+</html>
