@@ -389,7 +389,7 @@ function extrairUUIDDoAnuncio(evento) {
 
 let debugCount = 0;
 function debugLog(msg) {
-  if (debugCount >= 25) return;
+  if (debugCount >= 60) return;
   debugCount++;
   const linha = document.createElement("div");
   linha.textContent = new Date().toLocaleTimeString("pt-BR") + " [debug] " + msg;
@@ -400,7 +400,16 @@ function onAdvertisement(evento) {
   const chaves = Array.from(evento.manufacturerData.keys()).map(function (k) { return "0x" + k.toString(16); }).join(",") || "nenhum";
   debugLog("rssi=" + evento.rssi + " manufacturerData=[" + chaves + "]");
 
-  const uuid = extrairUUIDDoAnuncio(evento);
+  let uuid = null;
+  try {
+    uuid = extrairUUIDDoAnuncio(evento);
+    if (evento.manufacturerData.has(0x004C)) {
+      const d = evento.manufacturerData.get(0x004C);
+      debugLog("apple: byteLength=" + d.byteLength + " uuidExtraido=" + uuid);
+    }
+  } catch (err) {
+    debugLog("ERRO ao extrair UUID: " + err.message);
+  }
   if (!uuid) return;
 
   if (!pairedUUID) {
