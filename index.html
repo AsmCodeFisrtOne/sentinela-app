@@ -206,6 +206,7 @@ const CHECK_INTERVAL_MS = 1000;
 let pairedUUID = null;          // UUID do beacon pareado (lido do Firestore ou digitado)
 let lastSeenAt = 0;
 let alarmOn = false;
+let silenciadoManualmente = false;
 let scanning = false;
 let checkTimer = null;
 let contactNumber = "";
@@ -357,11 +358,12 @@ function dispararAlarme() {
 
 function pararAlarme() {
   alarmOn = false;
+  silenciadoManualmente = true;
   stopSiren();
   statusCard.classList.remove("alarm");
   statusIcon.className = "ti ti-shield-check";
-  statusTitle.textContent = "Dentro do alcance";
-  statusSub.textContent = "Conectado normalmente";
+  statusTitle.textContent = "Alarme parado";
+  statusSub.textContent = "Aguardando o beacon voltar ao alcance";
   soundRow.classList.remove("show");
   msgRow.classList.remove("show");
   stopAlarmBtn.style.display = "none";
@@ -402,16 +404,28 @@ function onAdvertisement(evento) {
   if (uuid !== pairedUUID) return;
 
   lastSeenAt = Date.now();
-  if (alarmOn) pararAlarme();
+  const estavaSilenciado = silenciadoManualmente;
+  silenciadoManualmente = false;
 
+  if (alarmOn) {
+    pararAlarme();
+  }
+
+  statusCard.classList.remove("alarm");
+  statusIcon.className = "ti ti-shield-check";
   statusTitle.textContent = "Dentro do alcance";
   statusSub.textContent = "Sinal visto agora · RSSI " + evento.rssi + " dBm";
+
+  if (estavaSilenciado) {
+    logEvento("alarme", "Beacon voltou ao alcance - standby normalizado");
+  }
 }
 
 function iniciarChecagemDeAusencia() {
   if (checkTimer) clearInterval(checkTimer);
   checkTimer = setInterval(function () {
     if (!scanning) return;
+    if (silenciadoManualmente) return;
     if (lastSeenAt === 0) return;
     if (Date.now() - lastSeenAt > TIMEOUT_MS) {
       dispararAlarme();
