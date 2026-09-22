@@ -144,7 +144,7 @@
 
 <div class="wrap">
   <p class="app-title">Sentinela</p>
-  <p class="app-version">v1.5</p>
+  <p class="app-version">v1.6</p>
 
   <div id="statusCard" class="status-card">
     <div class="status-icon-wrap"><i id="statusIcon" class="ti ti-shield-check"></i></div>
@@ -215,6 +215,7 @@ let lastSeenAt = 0;
 let alarmOn = false;
 let silenciadoManualmente = false;
 let scanning = false;
+let bleScanObj = null;
 let checkTimer = null;
 let contactNumber = "";
 
@@ -448,6 +449,7 @@ async function conectar() {
   try {
     connectBtn.disabled = true;
     const scan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true });
+    bleScanObj = scan;
     navigator.bluetooth.addEventListener("advertisementreceived", onAdvertisement);
     scanning = true;
     statusTitle.textContent = "Procurando o beacon...";
