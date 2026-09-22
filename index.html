@@ -376,17 +376,6 @@ stopAlarmBtn.addEventListener("click", pararAlarme);
 // features" ativada em chrome://flags, porque requestLEScan ainda é
 // experimental. Sem essa flag, o navegador não expõe essa função.
 // ---------------------------------------------------------------------
-function extrairUUIDDoAnuncio(evento) {
-  // Beacons no formato iBeacon vêm dentro de manufacturerData da Apple (0x004C)
-  const dados = evento.manufacturerData.get(0x004C);
-  if (!dados || dados.byteLength < 22) return null;
-  const bytes = new Uint8Array(dados.buffer, dados.byteOffset, dados.byteLength);
-  // bytes[0..1] = tipo/tamanho do iBeacon, bytes[2..17] = UUID (16 bytes)
-  const uuidBytes = bytes.slice(2, 18);
-  const hex = Array.from(uuidBytes).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
-  return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) + "-" + hex.slice(16, 20) + "-" + hex.slice(20);
-}
-
 let debugCount = 0;
 function debugLog(msg) {
   if (debugCount >= 60) return;
@@ -397,20 +386,11 @@ function debugLog(msg) {
 }
 
 function onAdvertisement(evento) {
-  const chaves = Array.from(evento.manufacturerData.keys()).map(function (k) { return "0x" + k.toString(16); }).join(",") || "nenhum";
-  debugLog("rssi=" + evento.rssi + " manufacturerData=[" + chaves + "]");
+  const servicos = evento.uuids || [];
+  debugLog("rssi=" + evento.rssi + " uuids=[" + servicos.join(",") + "]");
 
-  let uuid = null;
-  try {
-    uuid = extrairUUIDDoAnuncio(evento);
-    if (evento.manufacturerData.has(0x004C)) {
-      const d = evento.manufacturerData.get(0x004C);
-      debugLog("apple: byteLength=" + d.byteLength + " uuidExtraido=" + uuid);
-    }
-  } catch (err) {
-    debugLog("ERRO ao extrair UUID: " + err.message);
-  }
-  if (!uuid) return;
+  if (servicos.length === 0) return;
+  const uuid = servicos[0];
 
   if (!pairedUUID) {
     // Primeiro beacon visto vira o pareado, e é salvo no Firestore
