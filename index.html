@@ -144,7 +144,7 @@
 
 <div class="wrap">
   <p class="app-title">Sentinela</p>
-  <p class="app-version">v1.8</p>
+  <p class="app-version">v1.9</p>
 
   <div id="statusCard" class="status-card">
     <div class="status-icon-wrap"><i id="statusIcon" class="ti ti-shield-check"></i></div>
@@ -358,9 +358,9 @@ function dispararAlarme() {
   statusSub.textContent = "Sinal do beacon perdido";
   soundRow.classList.add("show");
   msgRow.classList.add("show");
+  msgTitle.textContent = "Mensagem pronta";
   stopAlarmBtn.style.display = "block";
   startSiren();
-  enviarWhatsapp();
   logEvento("alarme", "Alarme disparado - beacon fora de alcance");
 }
 
@@ -472,8 +472,11 @@ connectBtn.addEventListener("click", conectar);
 // ---------------------------------------------------------------------
 document.addEventListener("visibilitychange", function () {
   if (!document.hidden && scanning) {
-    debugLog("aba voltou a ficar visível - retomando escaneamento");
-    conectar();
+    debugLog("aba voltou a ficar visível - toque em Conectar para retomar");
+    scanning = false;
+    connectBtn.disabled = false;
+    connectBtn.textContent = "Retomar escaneamento";
+    statusSub.textContent = "Toque em \"Retomar escaneamento\" para continuar monitorando";
   }
 });
 
